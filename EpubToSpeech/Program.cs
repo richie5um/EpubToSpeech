@@ -36,7 +36,7 @@ namespace EpubToSpeech
             var book = EpubReader.Read(bookFile);
             var bookText = book.ToPlainText();
             var cleanzedText = CleanzeText(bookText);
-
+            
             await TextToSpeechAsync(azureConfig, bookFile.Split(Path.DirectorySeparatorChar).Last(), cleanzedText).ConfigureAwait(false);
         }
 
@@ -47,7 +47,8 @@ namespace EpubToSpeech
             cleanzedText = new Regex(@"\r", RegexOptions.Multiline).Replace(cleanzedText, "");
             
             // Clean leading whitespace
-            cleanzedText = new Regex(@"^[ \t]+", RegexOptions.Multiline).Replace(cleanzedText, "");
+            cleanzedText = new Regex(@"^[ \t ]+", RegexOptions.Multiline).Replace(cleanzedText, "");
+            cleanzedText = new Regex(@"^\s+\.", RegexOptions.Multiline).Replace(cleanzedText, "");
             
             // Clean trailing whitespace
             cleanzedText = new Regex(@"[ \t]+$", RegexOptions.Multiline).Replace(cleanzedText, "");
@@ -71,7 +72,6 @@ namespace EpubToSpeech
         async static Task TextToSpeechAsync(AzureConfig azureConfig, string fileName, string cleanzedText)
         {
             var submitUrl = $"https://{azureConfig.Region}.customvoice.api.speech.microsoft.com/api/texttospeech/v3.0/longaudiosynthesis";
-            // submitUrl = "http://localhost:8111";
             
             var stream = new MemoryStream(Encoding.UTF8.GetBytes(cleanzedText));
             
@@ -162,17 +162,22 @@ namespace EpubToSpeech
 
         async static Task ConvertTTSToMp3Async(string zipName, string fileName)
         {
-            ZipFile.ExtractToDirectory(zipName, AppDomain.CurrentDomain.BaseDirectory, true);
+            var zipPathElements = new List<string> {
+                AppDomain.CurrentDomain.BaseDirectory,
+                zipName
+            };
+            
+            ZipFile.ExtractToDirectory(String.Join(Path.DirectorySeparatorChar, zipPathElements), AppDomain.CurrentDomain.BaseDirectory, true);
             
             var lameEnc = new Mp3Encoder();
             var audioFile = new WavReader();
             
-            var pathElements = new List<string> {
+            var wavPathElements = new List<string> {
                 AppDomain.CurrentDomain.BaseDirectory,
                 "output.wav"
             };
 
-            audioFile.OpenFile(String.Join(Path.DirectorySeparatorChar, pathElements));
+            audioFile.OpenFile(String.Join(Path.DirectorySeparatorChar, wavPathElements));
 
             var srcFormat = audioFile.GetFormat();
             lameEnc.SetFormat(srcFormat, srcFormat);
