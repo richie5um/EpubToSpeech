@@ -137,8 +137,9 @@ namespace EpubToSpeech
                         .DownloadFileAsync(AppDomain.CurrentDomain.BaseDirectory, outputValue.Name).ConfigureAwait(false);
                     Console.WriteLine($"{DateTime.Now.ToLongTimeString()} Downloaded: {outputValue.Name}");
                     
-                    // Convert Wav to Mp3
+                    Console.WriteLine($"{DateTime.Now.ToLongTimeString()} Converting To Mp3: {outputValue.Name}");
                     await ConvertTTSToMp3Async(outputValue.Name, fileName).ConfigureAwait(false);
+                    Console.WriteLine($"{DateTime.Now.ToLongTimeString()} Converted To Mp3: {outputValue.Name}");
                     
                     break;
                 }
@@ -179,17 +180,12 @@ namespace EpubToSpeech
             var inBuffer = audioFile.readWav();
             var outBuffer = new byte[inBuffer.Length];
 
-            var timer = new System.Diagnostics.Stopwatch();
-            timer.Start();
             var len = lameEnc.EncodeBuffer(inBuffer, 0, inBuffer.Length, outBuffer);
-            timer.Stop();
             lameEnc.Close();
 
             var outFile = File.Create($"{fileName}.mp3");
             outFile.Write(outBuffer, 0, len);
             outFile.Close();
-
-            Console.WriteLine($"{DateTime.Now.ToLongTimeString()} Converted to MP3 in {timer.ElapsedMilliseconds / 1000}s");
         }
     }
 
